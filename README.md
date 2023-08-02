@@ -1,3 +1,9 @@
+#### Summary
+
+This was taken from https://github.com/mreferre/yelb.  It was by far the best sample app that I 
+had seen.  I am modifying it to demonstrate stateless applications in Kubernetes clusters.  For this 
+app Redis does remain stateful (TODO) but the database is external.
+
 
 #### Why Yelb 
 

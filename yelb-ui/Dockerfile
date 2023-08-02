@@ -3,9 +3,11 @@ MAINTAINER massimo@it20.info
 
 WORKDIR /
 
-RUN npm install -g @angular/cli@6.0.0
+ENV ARCH=x86_64
 
-RUN npm install node-sass@4.13.1
+RUN npm install --arch=x64 -g @angular/cli@6.0.0
+
+RUN npm install --arch=x64 node-sass@4.13.1
 
 ADD clarity-seed-newfiles clarity-seed-newfiles 
 
@@ -26,7 +28,7 @@ RUN rm -r /clarity-seed/src/app/about
 
 WORKDIR /clarity-seed/src
 
-RUN npm install  
+RUN npm install --arch=x64 
 
 RUN ng build --environment=prod --output-path=./prod/dist/ -aot -vc -cc -dop --buildOptimizer
 RUN ng build --environment=test --output-path=./test/dist/

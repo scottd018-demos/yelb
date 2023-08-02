@@ -1,0 +1,217 @@
+# This should work on Kubernetes deployments that have LoadBalancer support
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-server
+  labels:
+    app: redis-server
+    tier: cache
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+  selector:
+    app: redis-server
+    tier: cache
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yelb-appserver
+  labels:
+    app: yelb-appserver
+    tier: middletier
+spec:
+  type: ClusterIP
+  ports:
+  - port: 4567
+  selector:
+    app: yelb-appserver
+    tier: middletier
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yelb-ui
+  labels:
+    app: yelb-ui
+    tier: frontend
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: yelb-ui
+    tier: frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yelb-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels: 
+      app: yelb-ui
+      tier: frontend    
+  template:
+    metadata:
+      labels:
+        app: yelb-ui
+        tier: frontend
+    spec:
+      containers:
+      - name: yelb-ui
+        image:  quay.io/dscott0/yelb-ui:v0.1.0
+        ports:
+        - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels: 
+      app: redis-server
+      tier: cache
+  template:
+    metadata:
+      labels:
+        app: redis-server
+        tier: cache
+    spec:
+      containers:
+      - name: redis-server
+        image: redis:4.0.2
+        ports:
+        - containerPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yelb-appserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels: 
+      app: yelb-appserver
+      tier: middletier
+  template:
+    metadata:
+      labels:
+        app: yelb-appserver
+        tier: middletier
+    spec:
+      containers:
+        - name: yelb-appserver
+          image:  quay.io/dscott0/yelb:v0.1.1
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 4567
+          env:
+            - name: RACK_ENV
+              value: custom
+          envFrom:
+            - secretRef:
+                name: yelb
+          volumeMounts:
+            - name: yelb-db-certs
+              mountPath: "/root/.postgresql"
+      volumes:
+        - name: yelb-db-certs
+          secret:
+            secretName: yelb-db-certs
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: yelb
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: yelb-ui
+                port:
+                  number: 80
+    - http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: yelb-appserver
+                port:
+                  number: 4567
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: yelb-dbseed
+data:
+  seed.sh: |
+    #!/usr/bin/env bash
+
+    set -e
+
+    # check environment
+    : ${YELB_DB_SERVER_ENDPOINT?missing YELB_DB_SERVER_ENDPOINT environment variable}
+    : ${YELB_DB_SERVER_PORT?missing YELB_DB_SERVER_PORT environment variable}
+    : ${YELB_DB_NAME?missing YELB_DB_NAME environment variable}
+    : ${YELB_DB_USERNAME?missing YELB_DB_USERNAME environment variable}
+    : ${YELB_DB_PASSWORD?missing YELB_DB_PASSWORD environment variable}
+
+    # set connection string
+    COCKROACH_URL=postgresql://${YELB_DB_USERNAME}:${YELB_DB_PASSWORD}@${YELB_DB_SERVER_ENDPOINT}:${YELB_DB_SERVER_PORT}/${YELB_DB_NAME}?sslmode=verify-full
+
+    # seed the database
+    cockroach sql --url "${COCKROACH_URL}" \
+      --execute "CREATE TABLE restaurants (name char(30),count integer,PRIMARY KEY (name))" \
+      --execute "INSERT INTO restaurants (name, count) VALUES ('outback', 0)" \
+      --execute "INSERT INTO restaurants (name, count) VALUES ('bucadibeppo', 0)" \
+      --execute "INSERT INTO restaurants (name, count) VALUES ('chipotle', 0)" \
+      --execute "INSERT INTO restaurants (name, count) VALUES ('ihop', 0)"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: yelb-dbseed
+spec:
+  completions: 1
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app: yelb-dbseed
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: yelb-dbseed
+          image:  cockroachdb/cockroach:amd64-v23.1.7
+          imagePullPolicy: Always
+          command:
+            - "/root/scripts/seed.sh"
+          envFrom:
+            - secretRef:
+                name: yelb
+          volumeMounts:
+            - name: yelb-db-certs
+              mountPath: "/root/.postgresql"
+            - name: yelb-db-seed-script
+              mountPath: /root/scripts
+      volumes:
+        - name: yelb-db-certs
+          secret:
+            secretName: yelb-db-certs
+        - name: yelb-db-seed-script
+          configMap:
+            defaultMode: 0755
+            name: yelb-dbseed
+            

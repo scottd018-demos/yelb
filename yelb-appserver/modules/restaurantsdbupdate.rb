@@ -25,11 +25,8 @@ def restaurantsdbupdate(restaurant)
         }
         restaurantrecord = dynamodb.update_item(params)
     else 
-        con = PG.connect  :host => $yelbdbhost,
-                      :port => $yelbdbport,
-                      :dbname => 'yelbdatabase',
-                      :user => 'postgres',
-                      :password => 'postgres_password'
+        url = "postgresql://#{$yelbdbusername}:#{$yelbdbpassword}@#{$yelbdbhost}:#{$yelbdbport}/#{$yelbdbname}?sslmode=verify-full"
+        con = PG.connect(url)
         con.prepare('statement1', 'UPDATE restaurants SET count = count +1 WHERE name = $1')
         res = con.exec_prepared('statement1', [ restaurant ])
         con.close
