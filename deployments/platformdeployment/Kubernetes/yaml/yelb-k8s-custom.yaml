@@ -118,12 +118,12 @@ spec:
             - secretRef:
                 name: yelb
           volumeMounts:
-            - name: yelb-db-certs
+            - name: yelb-cert
               mountPath: "/root/.postgresql"
       volumes:
-        - name: yelb-db-certs
+        - name: yelb-cert
           secret:
-            secretName: yelb-db-certs
+            secretName: yelb-cert
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -202,14 +202,14 @@ spec:
             - secretRef:
                 name: yelb
           volumeMounts:
-            - name: yelb-db-certs
+            - name: yelb-cert
               mountPath: "/root/.postgresql"
             - name: yelb-db-seed-script
               mountPath: /root/scripts
       volumes:
-        - name: yelb-db-certs
+        - name: yelb-cert
           secret:
-            secretName: yelb-db-certs
+            secretName: yelb-cert
         - name: yelb-db-seed-script
           configMap:
             defaultMode: 0755

@@ -25,7 +25,7 @@ secret:
 
 COCKROACH_CERT_FILE ?= root.crt
 secret-cert:
-	kubectl create secret generic yelb-db-certs --from-file=$(COCKROACH_CERT_FILE)
+	kubectl create secret generic yelb-cert --from-file=$(COCKROACH_CERT_FILE)
 
 ingress:
 	helm upgrade --install ingress-nginx ingress-nginx \
