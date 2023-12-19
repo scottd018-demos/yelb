@@ -200,16 +200,16 @@ func initRedis() *redis.Client {
 		options.Password = password
 	}
 
-	client := redis.NewClient(options)
+	redisClient := redis.NewClient(options)
 
 	// ping the Redis server to test the connection
-	_, err := client.Ping().Result()
+	_, err := redisClient.Ping().Result()
 	if err != nil {
-		client.Close()
+		redisClient.Close()
 		panic(fmt.Sprintf("error connecting to redis: %s", err))
 	}
 
-	return client
+	return redisClient
 }
 
 func initPostgres() *sql.DB {
@@ -231,19 +231,19 @@ func initPostgres() *sql.DB {
 	}
 
 	// open a database connection
-	db, err := sql.Open("postgres", connStr)
+	dbClient, err := sql.Open("postgres", connStr)
 	if err != nil {
 		panic(fmt.Sprintf("error connecting to postgres: %s", err))
 	}
 
 	// ping the database to test the connection
-	err = db.Ping()
+	err = dbClient.Ping()
 	if err != nil {
-		db.Close()
+		dbClient.Close()
 		panic(fmt.Sprintf("error pinging postgres: %s", err))
 	}
 
-	return db
+	return dbClient
 }
 
 func readCountPostgres(dbClient *sql.DB, restaurant string) string {
