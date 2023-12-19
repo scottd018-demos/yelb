@@ -195,7 +195,7 @@ func initRedis() *redis.Client {
 		DB:   0,
 	}
 
-	password := envStringOrDefault("REDIS_SERVER_ENDPOINT", redisHost)
+	password := envStringOrDefault("REDIS_PASSWORD", "")
 	if password != "" {
 		options.Password = password
 	}
