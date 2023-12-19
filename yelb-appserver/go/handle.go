@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/go-redis/redis"
+	_ "github.com/lib/pq"
 )
 
 const (
