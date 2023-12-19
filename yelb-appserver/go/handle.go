@@ -233,7 +233,6 @@ func initPostgres() *sql.DB {
 	// open a database connection
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		db.Close()
 		panic(fmt.Sprintf("error connecting to postgres: %s", err))
 	}
 
