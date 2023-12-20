@@ -1,6 +1,5 @@
 export const environment = {
   production: false,
   envName: 'test',
-  appserver_env: 'http://localhost:4567',
-  hack_path: false,
+  appserver_env: 'http://localhost:4567'
 };

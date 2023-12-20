@@ -14,17 +14,34 @@ sed -i -- 's#/usr/share/nginx/html#/clarity-seed/'$UI_ENV'/dist#g' $NGINX_CONF
 
 # this adds the reverse proxy configuration to nginx
 # everything that hits /api is proxied to the app server
+# NOTE: HACK_PATH is used for knative func as it only handles the path of /.  to handle this
+#       we pass an api_path query parameter instead of using the path.
 if ! grep -q "location /api" "$NGINX_CONF"; then
-    eval "cat <<EOF
-    location /api {
-        proxy_pass "$YELB_APPSERVER_ENDPOINT"/api;
-        proxy_http_version 1.1;
-    }
-    gzip on;
-    gzip_types text/plain text/css application/json application/javascript application/x-javascript text/xml application/xml application/xml+rss text/javascript;
-    gunzip on;
+    if [ "$HACK_PATH" == "true" ]; then
+        eval "cat <<EOF
+        location /api {
+            proxy_pass "$YELB_APPSERVER_ENDPOINT"/api;
+            proxy_http_version 1.1;
+        }
+        gzip on;
+        gzip_types text/plain text/css application/json application/javascript application/x-javascript text/xml application/xml application/xml+rss text/javascript;
+        gunzip on;
 EOF
 " > /proxycfg.txt
+    else
+        eval "cat <<EOF
+        location /api {
+            rewrite ^/api(/.*)$ /?api_path=$1 last;
+            proxy_pass "$YELB_APPSERVER_ENDPOINT"/api;
+            proxy_http_version 1.1;
+        }
+        gzip on;
+        gzip_types text/plain text/css application/json application/javascript application/x-javascript text/xml application/xml application/xml+rss text/javascript;
+        gunzip on;
+EOF
+" > /proxycfg.txt
+    fi
+
     # echo "        proxy_set_header Host $host;" >> /proxycfg.txt
     sed --in-place '/server_name  localhost;/ r /proxycfg.txt' $NGINX_CONF
 fi

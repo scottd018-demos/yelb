@@ -25,17 +25,13 @@ If you are using the nginx redirect method (used in the bare metal, EC2 and cont
 >> public appserver    =    environment.appserver_env;
 If you want to take advantage of the env.js file (used in the serverless S3 static web hosting use case) then change it to:
 >> public appserver    =    this.env.apiUrl;
-This sets a hack path for knative func.  It redirects to the / path and passes in a api_path param because
-knative func only listens on /:
->> public hackpath     = environment.hack_path;
 This will set the endpoint to the value found in env.js (right now this change needs to be done at build time e.g. via sed)
 For reference: support for reading the env.js file has been introduced following these steps: 
 https://www.jvandemo.com/how-to-use-environment-variables-to-configure-your-angular-application-without-a-rebuild/ 
 */
 
 public appserver = environment.appserver_env;
-public hackpath = environment.hack_path;
-public appserver_path = `http://10.0.12.8:8080`;
+
 
 colorScheme = {
     domain: ['#5AA454', '#A10A28', '#C7B42C', '#AAAAAA']
@@ -49,14 +45,7 @@ view: any[] = [700, 200];
 ngOnInit(){this.getvotes(); this.getstats()}
 
 getvotes(): void {
-    let url: string;
-
-    if (this.hackpath) {
-        url = `${this.appserver_path}?api_path=/api/getvotes`;
-    } else {
-        url = `${this.appserver}/api/getvotes`;
-    }
-
+    const url = `${this.appserver}/api/getvotes`;
     console.log("connecting to app server " + url);
     this.http.get(url)
                 .map((res: Response) => res.json())
@@ -64,14 +53,7 @@ getvotes(): void {
     }
 
 getstats(): void {
-    let url: string;
-
-    if (this.hackpath) {
-        url = `${this.appserver_path}?api_path=/api/getstats`;
-    } else {
-        url = `${this.appserver}/api/getstats`;
-    }
-
+    const url = `${this.appserver}/api/getstats`;
     console.log("connecting to app server " + url);
     this.http.get(url)
                 .map((res: Response) => res.json())
@@ -79,14 +61,7 @@ getstats(): void {
     }
 
 vote(restaurant: string): void {
-    let url: string;
-
-    if (this.hackpath) {
-        url = `${this.appserver_path}?api_path=/api/${restaurant}`;
-    } else {
-        url = `${this.appserver}/api/${restaurant}`;
-    }
-
+    const url = `${this.appserver}/api/${restaurant}`;
     console.log("connecting to app server " + url);
     this.http.get(url)
                 .map((res: Response) => res.json())
