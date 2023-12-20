@@ -36,7 +36,7 @@ const (
 
 type stats struct {
 	Hostname  string `json:"hostname"`
-	PageViews string `json:"pageviews"`
+	PageViews int    `json:"pageviews"`
 }
 
 type vote struct {
@@ -79,7 +79,7 @@ func Handle(ctx context.Context, res http.ResponseWriter, req *http.Request) {
 	//       handler only handles a '/'.
 	switch apiPath {
 	case "/api/pageviews":
-		response = getPageViews(redisClient)
+		response = fmt.Sprint(getPageViews(redisClient))
 	case "/api/hostname":
 		response = getHostname()
 	case "/api/getstats":
@@ -108,16 +108,21 @@ func Handle(ctx context.Context, res http.ResponseWriter, req *http.Request) {
 	fmt.Fprint(res, response)
 }
 
-func getPageViews(redisClient *redis.Client) string {
+func getPageViews(redisClient *redis.Client) int {
 	redisClient.Incr(pageViewsKey)
 	count, err := redisClient.Get(pageViewsKey).Result()
 	if err != nil {
 		fmt.Printf("error: unable to get pageviews - %s", err)
 
-		return "0"
+		return 0
 	}
 
-	return count
+	countInt, err := strconv.Atoi(count)
+	if err != nil {
+		panic(fmt.Sprintf("error: unable to convert pageviews to integer - %s", err))
+	}
+
+	return countInt
 }
 
 func getHostname() string {
