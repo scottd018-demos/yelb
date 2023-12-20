@@ -71,8 +71,13 @@ func Handle(ctx context.Context, res http.ResponseWriter, req *http.Request) {
 	// create a place to store our response
 	var response string
 
+	// retrieve the query parameters
+	apiPath := req.URL.Query().Get("api_path")
+
 	// select the correct method based on the path
-	switch req.URL.Path {
+	// NOTE: we are faking the api path here because knative func does not support pathing in the URL.  the
+	//       handler only handles a '/'.
+	switch apiPath {
 	case "/api/pageviews":
 		response = getPageViews(redisClient)
 	case "/api/hostname":
@@ -92,7 +97,7 @@ func Handle(ctx context.Context, res http.ResponseWriter, req *http.Request) {
 	default:
 		res.WriteHeader(http.StatusBadRequest)
 		res.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(res, `{"error": "'%s' is an invalid path"}`, req.URL.Path)
+		fmt.Fprintf(res, `{"error": "'%s' is an invalid api_path"}`, apiPath)
 
 		return
 	}
