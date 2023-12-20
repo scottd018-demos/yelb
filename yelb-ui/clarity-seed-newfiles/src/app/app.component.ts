@@ -35,6 +35,7 @@ https://www.jvandemo.com/how-to-use-environment-variables-to-configure-your-angu
 
 public appserver = environment.appserver_env;
 public hackpath = environment.hack_path;
+public appserver_path = process.env.YELB_APPSERVER_ENDPOINT;
 
 colorScheme = {
     domain: ['#5AA454', '#A10A28', '#C7B42C', '#AAAAAA']
@@ -51,7 +52,7 @@ getvotes(): void {
     let url: string;
 
     if (this.hackpath) {
-        url = `${this.appserver}?api_path=/api/getvotes`;
+        url = `${this.appserver_path}?api_path=/api/getvotes`;
     } else {
         url = `${this.appserver}/api/getvotes`;
     }
@@ -66,7 +67,7 @@ getstats(): void {
     let url: string;
 
     if (this.hackpath) {
-        url = `${this.appserver}?api_path=/api/getstats`;
+        url = `${this.appserver_path}?api_path=/api/getstats`;
     } else {
         url = `${this.appserver}/api/getstats`;
     }
@@ -81,7 +82,7 @@ vote(restaurant: string): void {
     let url: string;
 
     if (this.hackpath) {
-        url = `${this.appserver}?api_path=/api/${restaurant}`;
+        url = `${this.appserver_path}?api_path=/api/${restaurant}`;
     } else {
         url = `${this.appserver}/api/${restaurant}`;
     }

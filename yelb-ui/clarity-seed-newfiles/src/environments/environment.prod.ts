@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
   envName: 'prod',
-  appserver_env: process.env.YELB_APPSERVER_ENDPOINT,
+  appserver_env: window.location.href,
   hack_path: true
 };
