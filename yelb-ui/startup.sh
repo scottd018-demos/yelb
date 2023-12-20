@@ -20,9 +20,14 @@ if ! grep -q "location /api" "$NGINX_CONF"; then
     if [ "$HACK_PATH" == "true" ]; then
         eval "cat <<EOF
         location /api/ {
-            rewrite ^/api(/.*)$ /?api_path=/api\\\$1 break;
-            proxy_pass "$YELB_APPSERVER_ENDPOINT";
+            if (\\\$request_uri ~ ^([^?]*)) {
+                set \\\$api_path \\\$1;
+            }
+
+            proxy_pass "$YELB_APPSERVER_ENDPOINT/?api_path=\\\$api_path";
             proxy_http_version 1.1;
+
+            break;
         }
         gzip on;
         gzip_types text/plain text/css application/json application/javascript application/x-javascript text/xml application/xml application/xml+rss text/javascript;
