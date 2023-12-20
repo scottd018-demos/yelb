@@ -41,7 +41,7 @@ type stats struct {
 
 type vote struct {
 	Name  string `json:"name"`
-	Value string `json:"value"`
+	Value int    `json:"value"`
 }
 
 // Handle an HTTP Request.
@@ -87,13 +87,13 @@ func Handle(ctx context.Context, res http.ResponseWriter, req *http.Request) {
 	case "/api/getvotes":
 		response = getVotes(dbClient)
 	case "/api/ihop":
-		response = updateRestaurant(dbClient, ihopKey)
+		response = fmt.Sprint(updateRestaurant(dbClient, ihopKey))
 	case "/api/chipotle":
-		response = updateRestaurant(dbClient, chipotleKey)
+		response = fmt.Sprint(updateRestaurant(dbClient, chipotleKey))
 	case "/api/outback":
-		response = updateRestaurant(dbClient, outbackKey)
+		response = fmt.Sprint(updateRestaurant(dbClient, outbackKey))
 	case "/api/bucadibeppo":
-		response = updateRestaurant(dbClient, buccaDiBeppoKey)
+		response = fmt.Sprint(updateRestaurant(dbClient, buccaDiBeppoKey))
 	default:
 		res.WriteHeader(http.StatusBadRequest)
 		res.Header().Set("Content-Type", "application/json")
@@ -166,7 +166,7 @@ func getVotes(dbClient *sql.DB) string {
 	return string(jsonVotes)
 }
 
-func updateRestaurant(dbClient *sql.DB, restaurant string) string {
+func updateRestaurant(dbClient *sql.DB, restaurant string) int {
 	return updateCountPostgres(dbClient, restaurant)
 }
 
@@ -252,36 +252,36 @@ func initPostgres() *sql.DB {
 	return dbClient
 }
 
-func readCountPostgres(dbClient *sql.DB, restaurant string) string {
+func readCountPostgres(dbClient *sql.DB, restaurant string) int {
 	// prepare the statement
 	statement, err := dbClient.Prepare("SELECT count FROM restaurants WHERE name = $1")
 	if err != nil {
 		fmt.Printf("error: unable to prepare statement for restaurant read %s - %s\n", restaurant, err)
 
-		return "0"
+		return 0
 	}
 	defer statement.Close()
 
 	// execute the query
-	var count string
+	var count int
 
 	err = statement.QueryRow(restaurant).Scan(&count)
 	if err != nil {
 		fmt.Printf("error: unable execute statement for restaurant read %s - %s\n", restaurant, err)
 
-		return "0"
+		return 0
 	}
 
 	return count
 }
 
-func updateCountPostgres(dbClient *sql.DB, restaurant string) string {
+func updateCountPostgres(dbClient *sql.DB, restaurant string) int {
 	// prepare the statement
 	statement, err := dbClient.Prepare("UPDATE restaurants SET count = count +1 WHERE name = $1")
 	if err != nil {
 		fmt.Printf("error: unable to prepare statement for restaurant update %s - %s\n", restaurant, err)
 
-		return "0"
+		return 0
 	}
 	defer statement.Close()
 
@@ -290,7 +290,7 @@ func updateCountPostgres(dbClient *sql.DB, restaurant string) string {
 	if err != nil {
 		fmt.Printf("error: unable execute statement for restaurant update %s - %s\n", restaurant, err)
 
-		return "0"
+		return 0
 	}
 
 	// return the latest value from the table
