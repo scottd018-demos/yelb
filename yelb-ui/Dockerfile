@@ -44,6 +44,7 @@ ADD startup.sh startup.sh
 ENV UI_ENV=prod 
 
 RUN chmod +x startup.sh
+RUN apt-get update && apt-get install -y curl
 
 COPY --from=0 /clarity-seed/src/prod/dist /clarity-seed/prod/dist
 COPY --from=0 /clarity-seed/src/test/dist /clarity-seed/test/dist

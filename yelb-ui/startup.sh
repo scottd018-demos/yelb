@@ -19,9 +19,9 @@ sed -i -- 's#/usr/share/nginx/html#/clarity-seed/'$UI_ENV'/dist#g' $NGINX_CONF
 if ! grep -q "location /api" "$NGINX_CONF"; then
     if [ "$HACK_PATH" == "true" ]; then
         eval "cat <<EOF
-        location /api {
-            rewrite ^/api(/.*)$ /?api_path=\\\$1 last;
-            proxy_pass "$YELB_APPSERVER_ENDPOINT"/api;
+        location /api/ {
+            rewrite ^/api(/.*)$ /?api_path=/api\\\$1 break;
+            proxy_pass "$YELB_APPSERVER_ENDPOINT";
             proxy_http_version 1.1;
         }
         gzip on;
