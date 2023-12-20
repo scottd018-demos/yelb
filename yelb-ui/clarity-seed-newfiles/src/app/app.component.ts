@@ -35,7 +35,7 @@ https://www.jvandemo.com/how-to-use-environment-variables-to-configure-your-angu
 
 public appserver = environment.appserver_env;
 public hackpath = environment.hack_path;
-public appserver_path = process.env.YELB_APPSERVER_ENDPOINT;
+public appserver_path = `http://10.0.12.8:8080`;
 
 colorScheme = {
     domain: ['#5AA454', '#A10A28', '#C7B42C', '#AAAAAA']
