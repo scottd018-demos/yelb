@@ -256,7 +256,7 @@ func readCountPostgres(dbClient *sql.DB, restaurant string) string {
 	// prepare the statement
 	statement, err := dbClient.Prepare("SELECT count FROM restaurants WHERE name = ?")
 	if err != nil {
-		fmt.Printf("error: unable to prepare statement for restaurant read %s - %s", restaurant, err)
+		fmt.Printf("error: unable to prepare statement for restaurant read %s - %s\n", restaurant, err)
 
 		return "0"
 	}
@@ -267,7 +267,7 @@ func readCountPostgres(dbClient *sql.DB, restaurant string) string {
 
 	err = statement.QueryRow(restaurant).Scan(&count)
 	if err != nil {
-		fmt.Printf("error: unable execute statement for restaurant read %s - %s", restaurant, err)
+		fmt.Printf("error: unable execute statement for restaurant read %s - %s\n", restaurant, err)
 
 		return "0"
 	}
@@ -279,7 +279,7 @@ func updateCountPostgres(dbClient *sql.DB, restaurant string) string {
 	// prepare the statement
 	statement, err := dbClient.Prepare("UPDATE restaurants SET count = count +1 WHERE name = ?")
 	if err != nil {
-		fmt.Printf("error: unable to prepare statement for restaurant update %s - %s", restaurant, err)
+		fmt.Printf("error: unable to prepare statement for restaurant update %s - %s\n", restaurant, err)
 
 		return "0"
 	}
@@ -288,7 +288,7 @@ func updateCountPostgres(dbClient *sql.DB, restaurant string) string {
 	// execute the update
 	_, err = statement.Exec(restaurant)
 	if err != nil {
-		fmt.Printf("error: unable execute statement for restaurant update %s - %s", restaurant, err)
+		fmt.Printf("error: unable execute statement for restaurant update %s - %s\n", restaurant, err)
 
 		return "0"
 	}
