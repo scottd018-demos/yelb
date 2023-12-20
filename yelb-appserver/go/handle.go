@@ -254,7 +254,7 @@ func initPostgres() *sql.DB {
 
 func readCountPostgres(dbClient *sql.DB, restaurant string) string {
 	// prepare the statement
-	statement, err := dbClient.Prepare("SELECT count FROM restaurants WHERE name = ?")
+	statement, err := dbClient.Prepare("SELECT count FROM restaurants WHERE name = $1")
 	if err != nil {
 		fmt.Printf("error: unable to prepare statement for restaurant read %s - %s\n", restaurant, err)
 
@@ -277,7 +277,7 @@ func readCountPostgres(dbClient *sql.DB, restaurant string) string {
 
 func updateCountPostgres(dbClient *sql.DB, restaurant string) string {
 	// prepare the statement
-	statement, err := dbClient.Prepare("UPDATE restaurants SET count = count +1 WHERE name = ?")
+	statement, err := dbClient.Prepare("UPDATE restaurants SET count = count +1 WHERE name = $1")
 	if err != nil {
 		fmt.Printf("error: unable to prepare statement for restaurant update %s - %s\n", restaurant, err)
 
