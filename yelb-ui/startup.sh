@@ -20,7 +20,7 @@ if ! grep -q "location /api" "$NGINX_CONF"; then
     if [ "$HACK_PATH" == "true" ]; then
         eval "cat <<EOF
         location /api {
-            rewrite ^/api(/.*)$ /?api_path=$1 last;
+            rewrite ^/api(/.*)$ /?api_path=\$1 last;
             proxy_pass "$YELB_APPSERVER_ENDPOINT"/api;
             proxy_http_version 1.1;
         }
