@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/go-redis/redis"
 	_ "github.com/lib/pq"
@@ -78,7 +79,7 @@ func Handle(ctx context.Context, res http.ResponseWriter, req *http.Request) {
 	var response string
 
 	// retrieve the query parameters
-	apiPath := req.URL.Query().Get("api_path")
+	apiPath := normalizeApiPath(req.URL.Query().Get("api_path"))
 
 	// select the correct method based on the path
 	// NOTE: we are faking the api path here because knative func does not support pathing in the URL.  the
@@ -304,4 +305,19 @@ func updateCountPostgres(dbClient *sql.DB, restaurant string) int {
 
 	// return the latest value from the table
 	return readCountPostgres(dbClient, restaurant)
+}
+
+func normalizeApiPath(apiPath string) string {
+	// convert / characters to strings and store as an array
+	pathArray := strings.Split(apiPath, "/")
+
+	// remove empty spaces
+	finalPathArray := []string{}
+	for _, element := range pathArray {
+		if element != "" {
+			finalPathArray = append(finalPathArray, element)
+		}
+	}
+
+	return fmt.Sprintf("/%s", strings.Join(finalPathArray, "/"))
 }
