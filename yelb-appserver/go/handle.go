@@ -79,6 +79,8 @@ func Handle(ctx context.Context, res http.ResponseWriter, req *http.Request) {
 	var response string
 
 	// retrieve the query parameters
+	// NOTE: the following takes in api_path as a query parameter, e.g. /?api_path=/api/hostname.  This is because
+	//       knative func currently only accepts traffic to the / endpoint, so we are faking this a bit.
 	apiPath := normalizeApiPath(req.URL.Query().Get("api_path"))
 
 	// select the correct method based on the path

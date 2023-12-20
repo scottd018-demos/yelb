@@ -4,3 +4,4 @@ tls.crt
 tls.key
 values.yaml
 .vscode
+node_modules
