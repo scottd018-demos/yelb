@@ -60,6 +60,12 @@ func Handle(ctx context.Context, res http.ResponseWriter, req *http.Request) {
 	req.Header.Add("Access-Control-Allow-Headers", "Authorization,Accepts,Content-Type,X-CSRF-Token,X-Requested-With")
 	req.Header.Add("Access-Control-Allow-Methods", "GET")
 
+	// set common headers for the response
+	res.Header().Add("Access-Control-Allow-Origin", "*")
+	res.Header().Add("Access-Control-Allow-Headers", "Authorization,Accepts,Content-Type,X-CSRF-Token,X-Requested-With")
+	res.Header().Add("Access-Control-Allow-Methods", "GET")
+	res.Header().Add("Content-Type", "application/json")
+
 	// initialize the redis connection
 	redisClient := initRedis()
 	defer redisClient.Close()
@@ -96,7 +102,6 @@ func Handle(ctx context.Context, res http.ResponseWriter, req *http.Request) {
 		response = fmt.Sprint(updateRestaurant(dbClient, buccaDiBeppoKey))
 	default:
 		res.WriteHeader(http.StatusBadRequest)
-		res.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(res, `{"error": "'%s' is an invalid api_path"}`, apiPath)
 
 		return
@@ -104,7 +109,6 @@ func Handle(ctx context.Context, res http.ResponseWriter, req *http.Request) {
 
 	// write and return the response
 	res.WriteHeader(http.StatusOK)
-	res.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(res, response)
 }
 
