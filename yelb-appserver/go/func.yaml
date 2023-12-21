@@ -9,3 +9,12 @@ build:
 run:
   envs:
     - value: '{{ secret:yelb-connection-info }}'
+deploy:
+  namespace: yelb
+  remote: false
+  annotations: {}
+  options: {}
+  labels: []
+  healthEndpoints:
+    liveness: /health/liveness
+    readiness: /health/readiness
