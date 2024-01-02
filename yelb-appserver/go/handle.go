@@ -210,8 +210,12 @@ func envIntOrDefault(env string, defaultValue int) int {
 func initRedis() *redis.Client {
 	// set the redis options
 	options := &redis.Options{
-		Addr:      fmt.Sprintf("%s:%d", envStringOrDefault("REDIS_SERVER_ENDPOINT", redisHost), envIntOrDefault("REDIS_SERVER_PORT", redisPort)),
-		TLSConfig: &tls.Config{InsecureSkipVerify: true},
+		Addr: fmt.Sprintf("%s:%d", envStringOrDefault("REDIS_SERVER_ENDPOINT", redisHost), envIntOrDefault("REDIS_SERVER_PORT", redisPort)),
+	}
+
+	hasTls := envStringOrDefault("REDIS_TLS", "")
+	if hasTls == "true" {
+		options.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
 	password := envStringOrDefault("REDIS_PASSWORD", "")
