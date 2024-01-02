@@ -18,8 +18,12 @@ sed -i -- 's#/usr/share/nginx/html#/clarity-seed/'$UI_ENV'/dist#g' $NGINX_CONF
 #       we pass an api_path query parameter instead of using the path.
 if ! grep -q "location /api" "$NGINX_CONF"; then
     if [ "$HACK_PATH" == "true" ]; then
+        RESOLVER="$(cat /etc/resolv.conf | grep nameserver | awk '{print $NF}')"
+
         eval "cat <<EOF
         location /api/ {
+            resolver $RESOLVER;
+
             if (\\\$request_uri ~ ^([^?]*)) {
                 set \\\$api_path \\\$1;
             }
