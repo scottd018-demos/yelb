@@ -116,7 +116,7 @@ func Handle(ctx context.Context, res http.ResponseWriter, req *http.Request) {
 	fmt.Fprint(res, response)
 }
 
-func getPageViews(redisClient *redis.Client) int {
+func getPageViews(redisClient *redis.ClusterClient) int {
 	redisClient.Incr(pageViewsKey)
 	count, err := redisClient.Get(pageViewsKey).Result()
 	if err != nil {
@@ -144,7 +144,7 @@ func getHostname() string {
 	return hostname
 }
 
-func getStats(redisClient *redis.Client) string {
+func getStats(redisClient *redis.ClusterClient) string {
 	current := &stats{
 		Hostname:  getHostname(),
 		PageViews: getPageViews(redisClient),
@@ -207,11 +207,12 @@ func envIntOrDefault(env string, defaultValue int) int {
 	return defaultValue
 }
 
-func initRedis() *redis.Client {
+func initRedis() *redis.ClusterClient {
 	// set the redis options
-	options := &redis.Options{
-		Addr: fmt.Sprintf("%s:%d", envStringOrDefault("REDIS_SERVER_ENDPOINT", redisHost), envIntOrDefault("REDIS_SERVER_PORT", redisPort)),
-		DB:   0,
+	options := &redis.ClusterOptions{
+		Addrs: []string{
+			fmt.Sprintf("%s:%d", envStringOrDefault("REDIS_SERVER_ENDPOINT", redisHost), envIntOrDefault("REDIS_SERVER_PORT", redisPort)),
+		},
 	}
 
 	hasTls := envStringOrDefault("REDIS_TLS", "")
@@ -224,7 +225,7 @@ func initRedis() *redis.Client {
 		options.Password = password
 	}
 
-	redisClient := redis.NewClient(options)
+	redisClient := redis.NewClusterClient(options)
 
 	// ping the Redis server to test the connection
 	_, err := redisClient.Ping().Result()
