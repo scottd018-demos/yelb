@@ -14,7 +14,9 @@ deploy:
   remote: false
   annotations: {}
   options: {}
-  labels: []
+  labels: 
+    - key: networking.knative.dev/visibility
+      value: cluster-local
   healthEndpoints:
     liveness: /health/liveness
     readiness: /health/readiness
