@@ -211,6 +211,7 @@ func initRedis() *redis.Client {
 	// set the redis options
 	options := &redis.Options{
 		Addr: fmt.Sprintf("%s:%d", envStringOrDefault("REDIS_SERVER_ENDPOINT", redisHost), envIntOrDefault("REDIS_SERVER_PORT", redisPort)),
+		DB:   0,
 	}
 
 	hasTls := envStringOrDefault("REDIS_TLS", "")
