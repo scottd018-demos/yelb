@@ -14,14 +14,19 @@ YELB_DB_NAME ?= yelb
 YELB_DB_USERNAME ?= yelb
 YELB_DB_PASSWORD ?= 
 REDIS_SERVER_ENDPOINT ?= redis-server
+REDIS_PASSWORD ?=
+REDIS_TLS ?= true
 secret:
 	kubectl create secret generic yelb \
+		--from-literal=RACK_ENV=custom \
 		--from-literal=YELB_DB_SERVER_ENDPOINT=$(YELB_DB_SERVER_ENDPOINT) \
 		--from-literal=YELB_DB_SERVER_PORT=$(YELB_DB_SERVER_PORT) \
-		--from-literal=YELB_DB_NAME=$(YELB_DB_CLUSTER).$(YELB_DB_NAME) \
+		--from-literal=YELB_DB_NAME=$(YELB_DB_NAME) \
 		--from-literal=YELB_DB_USERNAME=$(YELB_DB_USERNAME) \
-		--from-literal=YELB_DB_PASSWORD=$(YELB_DB_PASSWORD) \
-		--from-literal=REDIS_SERVER_ENDPOINT=$(REDIS_SERVER_ENDPOINT)
+		--from-literal=YELB_DB_PASSWORD='$(YELB_DB_PASSWORD)' \
+		--from-literal=REDIS_SERVER_ENDPOINT=$(REDIS_SERVER_ENDPOINT) \
+		--from-literal=REDIS_PASSWORD='$(REDIS_PASSWORD)' \
+		--from-literal=REDIS_TLS=$(REDIS_TLS) \
 
 COCKROACH_CERT_FILE ?= root.crt
 secret-cert:
