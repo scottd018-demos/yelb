@@ -36,6 +36,10 @@ if ! grep -q "location /api" "$NGINX_CONF"; then
         gzip on;
         gzip_types text/plain text/css application/json application/javascript application/x-javascript text/xml application/xml application/xml+rss text/javascript;
         gunzip on;
+
+        location ~* \.(htm|html)$ {
+            expires -1;
+        }
 EOF
 " > /proxycfg.txt
     else
