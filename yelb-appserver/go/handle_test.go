@@ -31,13 +31,13 @@ func Test_normalizeApiPath(t *testing.T) {
 			},
 			want: "/api/test",
 		},
-		// {
-		// 	name: "ensure abnormal path without spaces returns normal",
-		// 	args: args{
-		// 		apiPath: "api/test",
-		// 	},
-		// 	want: "/api/test",
-		// },
+		{
+			name: "ensure abnormal path without spaces returns normal",
+			args: args{
+				apiPath: "api/test",
+			},
+			want: "/api/test",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
