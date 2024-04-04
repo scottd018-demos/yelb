@@ -11,6 +11,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-redis/redis"
 	_ "github.com/lib/pq"
 )
@@ -30,6 +34,7 @@ const (
 
 	// backend table/cache info
 	pageViewsKey    = "pageviews"
+	pageViewAttr    = "counter" // dynamodb only
 	ihopKey         = "ihop"
 	outbackKey      = "outback"
 	chipotleKey     = "chipotle"
@@ -44,6 +49,107 @@ type stats struct {
 type vote struct {
 	Name  string `json:"name"`
 	Value int    `json:"value"`
+}
+
+type cacheClient struct {
+	ctx           context.Context
+	redis         *redis.ClusterClient
+	dynamo        *dynamodb.Client
+	dynamoDBTable string
+}
+
+func (cache *cacheClient) get() string {
+	if cache.redis != nil {
+		count, err := cache.redis.Get(pageViewsKey).Result()
+		if err != nil {
+			fmt.Printf("error: unable to get pageviews - %s", err)
+
+			return "0"
+		}
+
+		return count
+	}
+
+	// use dynamodb connection
+	output, err := cache.dynamo.GetItem(cache.ctx, &dynamodb.GetItemInput{
+		TableName: aws.String(cache.dynamoDBTable),
+		Key: map[string]types.AttributeValue{
+			pageViewAttr: &types.AttributeValueMemberS{
+				Value: pageViewsKey,
+			},
+		},
+	})
+	if err != nil {
+		fmt.Printf("error: unable to get pageviews - %s", err)
+
+		return "0"
+	}
+
+	item := output.Item[fmt.Sprintf("%scount", pageViewsKey)]
+	switch v := item.(type) {
+	case *types.AttributeValueMemberS:
+		return v.Value
+	default:
+		panic(fmt.Sprintf("incorrect value type return %T for key %s", v, pageViewsKey))
+	}
+}
+
+func (cache *cacheClient) close() {
+	if cache.dynamo != nil {
+		return
+	}
+
+	cache.redis.Close()
+}
+
+func (cache *cacheClient) increment() int {
+	if cache.redis != nil {
+		cache.redis.Incr(pageViewsKey)
+		count, err := cache.redis.Get(pageViewsKey).Result()
+		if err != nil {
+			fmt.Printf("error: unable to get pageviews - %s", err)
+
+			return 0
+		}
+
+		countInt, err := strconv.Atoi(count)
+		if err != nil {
+			panic(fmt.Sprintf("error: unable to convert pageviews to integer - %s", err))
+		}
+
+		return countInt
+	}
+
+	// use dynamodb connection
+	count := cache.get()
+	countInt, err := strconv.Atoi(count)
+	if err != nil {
+		panic(fmt.Sprintf("error: unable to convert pageviews to integer - %s", err))
+	}
+
+	updateItemInput := &dynamodb.UpdateItemInput{
+		TableName: aws.String(cache.dynamoDBTable),
+		Key: map[string]types.AttributeValue{
+			pageViewAttr: &types.AttributeValueMemberS{
+				Value: pageViewsKey,
+			},
+		},
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":c": &types.AttributeValueMemberS{
+				Value: strconv.Itoa(countInt),
+			},
+		},
+		UpdateExpression: aws.String(fmt.Sprintf("set %scount = :c", pageViewsKey)),
+		ReturnValues:     types.ReturnValueUpdatedNew,
+	}
+
+	// run update
+	_, err = cache.dynamo.UpdateItem(cache.ctx, updateItemInput)
+	if err != nil {
+		panic(fmt.Sprintf("unable to update dynamodb key %s", pageViewsKey))
+	}
+
+	return countInt
 }
 
 // Handle an HTTP Request.
@@ -68,9 +174,9 @@ func Handle(ctx context.Context, res http.ResponseWriter, req *http.Request) {
 	res.Header().Add("Access-Control-Allow-Methods", "GET")
 	res.Header().Add("Content-Type", "application/json")
 
-	// initialize the redis connection
-	redisClient := initRedis()
-	defer redisClient.Close()
+	// initialize the cache connection
+	cache := initCacheClient(ctx)
+	defer cache.close()
 
 	// initialize the postgres connection
 	dbClient := initPostgres()
@@ -89,11 +195,11 @@ func Handle(ctx context.Context, res http.ResponseWriter, req *http.Request) {
 	//       handler only handles a '/'.
 	switch apiPath {
 	case "/api/pageviews":
-		response = fmt.Sprint(getPageViews(redisClient))
+		response = fmt.Sprint(getPageViews(cache))
 	case "/api/hostname":
 		response = getHostname()
 	case "/api/getstats":
-		response = getStats(redisClient)
+		response = getStats(cache)
 	case "/api/getvotes":
 		response = getVotes(dbClient)
 	case "/api/ihop":
@@ -116,21 +222,8 @@ func Handle(ctx context.Context, res http.ResponseWriter, req *http.Request) {
 	fmt.Fprint(res, response)
 }
 
-func getPageViews(redisClient *redis.ClusterClient) int {
-	redisClient.Incr(pageViewsKey)
-	count, err := redisClient.Get(pageViewsKey).Result()
-	if err != nil {
-		fmt.Printf("error: unable to get pageviews - %s", err)
-
-		return 0
-	}
-
-	countInt, err := strconv.Atoi(count)
-	if err != nil {
-		panic(fmt.Sprintf("error: unable to convert pageviews to integer - %s", err))
-	}
-
-	return countInt
+func getPageViews(cache *cacheClient) int {
+	return cache.increment()
 }
 
 func getHostname() string {
@@ -144,10 +237,10 @@ func getHostname() string {
 	return hostname
 }
 
-func getStats(redisClient *redis.ClusterClient) string {
+func getStats(cache *cacheClient) string {
 	current := &stats{
 		Hostname:  getHostname(),
-		PageViews: getPageViews(redisClient),
+		PageViews: getPageViews(cache),
 	}
 
 	jsonStats, err := json.Marshal(current)
@@ -235,6 +328,34 @@ func initRedis() *redis.ClusterClient {
 	}
 
 	return redisClient
+}
+
+func initDynamoDB(ctx context.Context) *dynamodb.Client {
+	// load aws config
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		panic(fmt.Sprintf("error loading AWS SDK config - %s", err.Error()))
+	}
+
+	// create dynamodb client and return
+	return dynamodb.NewFromConfig(cfg)
+}
+
+func initCacheClient(ctx context.Context) *cacheClient {
+	if envStringOrDefault("DYNAMODB_SERVER_TABLE", "") != "" {
+		tableName := envStringOrDefault("DYNAMODB_SERVER_TABLE", "")
+		if tableName == "" {
+			panic("missing DYNAMODB_SERVER_TABLE environment variable")
+		}
+
+		return &cacheClient{
+			ctx:           ctx,
+			dynamo:        initDynamoDB(ctx),
+			dynamoDBTable: tableName,
+		}
+	}
+
+	return &cacheClient{redis: initRedis()}
 }
 
 func initPostgres() *sql.DB {
