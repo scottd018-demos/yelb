@@ -20,3 +20,4 @@ deploy:
   healthEndpoints:
     liveness: /health/liveness
     readiness: /health/readiness
+  serviceAccountName: yelb-appserver
