@@ -343,15 +343,10 @@ func initDynamoDB(ctx context.Context) *dynamodb.Client {
 
 func initCacheClient(ctx context.Context) *cacheClient {
 	if envStringOrDefault("DYNAMODB_SERVER_TABLE", "") != "" {
-		tableName := envStringOrDefault("DYNAMODB_SERVER_TABLE", "")
-		if tableName == "" {
-			panic("missing DYNAMODB_SERVER_TABLE environment variable")
-		}
-
 		return &cacheClient{
 			ctx:           ctx,
 			dynamo:        initDynamoDB(ctx),
-			dynamoDBTable: tableName,
+			dynamoDBTable: envStringOrDefault("DYNAMODB_SERVER_TABLE", ""),
 		}
 	}
 
